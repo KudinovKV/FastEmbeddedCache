@@ -1,6 +1,12 @@
 # FastEmbeddedCache
 Fast embedded key-value storage (redis-like) that supports Set, Get, and Delete methods with TTL.
 
+## Install
+
+```bash
+go get -u github.com/KudinovKV/FastEmbededCache
+```
+
 ## Example Usage: 
 
 ```go
@@ -42,11 +48,11 @@ driver.Shutdown()
 
 Benchmark could be run using command below. Environment `TEST_MODE` set the algorithm to use: `LAZY` or `DEFAULT`.
 
-```
+```bash
 make benchmark 
 ```
 
-#### PriorityQueue Solution
+### PriorityQueue Solution
 
 | test name \ number of operation | 1000 (ns\op) | 10000 (ns\op) | 100000 (ns\op) | 1000000 (ns\op) | 10000000 (ns\op) |
 |:-------------------------------:|:------------:|:-------------:|:--------------:|:---------------:|:----------------:|
@@ -56,7 +62,7 @@ make benchmark
 |      BenchmarkWriteSimple       |     233.2    |     452.9     |      395.2     |      381.1      |       460.0      |
 |     BenchmarkWriteParallel      |     939.2    |      1123     |      1086      |       1206      |       5136       |
 
-#### Lazy Solution
+### Lazy Solution
 
 | test name \ number of operation | 1000 (ns\op) | 10000 (ns\op) | 100000 (ns\op) | 1000000 (ns\op) | 10000000 (ns\op) |
 |:-------------------------------:|:------------:|:-------------:|:--------------:|:---------------:|:----------------:|

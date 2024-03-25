@@ -1,31 +1,59 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/KudinovKV/FastEmbededCache/cache"
+	"github.com/KudinovKV/FastEmbededCache/lazy_cache"
 )
 
+const (
+	testModeLazy = "LAZY"
+
+	defaultTTL     = time.Minute
+	cleanerTimeout = time.Second
+)
+
+type cacheDriver interface {
+	Set(key string, value any, ttl time.Duration)
+	Get(key string) (any, error)
+	Delete(key string)
+}
+
+func initDriver() cacheDriver {
+	mode := os.Getenv("TEST_MODE")
+
+	switch mode {
+	case testModeLazy:
+		return lazy_cache.New(defaultTTL)
+	default:
+		return cache.New(context.Background(), defaultTTL, cleanerTimeout)
+	}
+}
+
 func BenchmarkWriteSimple(b *testing.B) {
-	driver := cache.New(time.Minute)
+	driver := initDriver()
 
 	for i := 0; i < b.N; i++ {
-		driver.Set(fmt.Sprintf("%d", i), i, time.Duration(i)*time.Second)
+		driver.Set(fmt.Sprintf("%d", i), i, time.Duration(rand.Int()%100)*time.Second)
 	}
 }
 
 func BenchmarkWriteParallel(b *testing.B) {
-	driver := cache.New(time.Minute)
+	driver := initDriver()
 
 	wg := sync.WaitGroup{}
 	wg.Add(b.N)
 
 	for i := 0; i < b.N; i++ {
 		go func(i int) {
-			driver.Set(fmt.Sprintf("%d", i), i, time.Duration(i)*time.Second)
+			driver.Set(fmt.Sprintf("%d", i), i, time.Duration(rand.Int()%100)*time.Second)
 
 			wg.Done()
 		}(i)
@@ -35,10 +63,10 @@ func BenchmarkWriteParallel(b *testing.B) {
 }
 
 func BenchmarkReadSimple(b *testing.B) {
-	driver := cache.New(time.Minute)
+	driver := initDriver()
 
 	for i := 0; i < b.N; i++ {
-		driver.Set(fmt.Sprintf("%d", i), i, time.Minute)
+		driver.Set(fmt.Sprintf("%d", i), i, time.Duration(rand.Int()%100)*time.Minute)
 	}
 
 	b.ResetTimer()
@@ -52,18 +80,18 @@ func BenchmarkReadSimple(b *testing.B) {
 }
 
 func BenchmarkReadParallel(b *testing.B) {
-	driver := cache.New(time.Minute)
+	driver := initDriver()
 
 	for i := 0; i < b.N; i++ {
-		driver.Set(fmt.Sprintf("%d", i), i, time.Minute)
+		driver.Set(fmt.Sprintf("%d", i), i, time.Duration(rand.Int()%100)*time.Minute)
 	}
 
 	b.ResetTimer()
 
-	var wg sync.WaitGroup
+	wg := sync.WaitGroup{}
+	wg.Add(b.N)
 
 	for i := 0; i < b.N; i++ {
-		wg.Add(1)
 		go func(i int) {
 			_, err := driver.Get(fmt.Sprintf("%d", i))
 			if err != nil {
@@ -78,7 +106,7 @@ func BenchmarkReadParallel(b *testing.B) {
 }
 
 func BenchmarkReadParallelWithTTL(b *testing.B) {
-	driver := cache.New(time.Minute)
+	driver := initDriver()
 
 	for i := 0; i < b.N; i++ {
 		ttl := time.Minute
@@ -91,10 +119,10 @@ func BenchmarkReadParallelWithTTL(b *testing.B) {
 
 	b.ResetTimer()
 
-	var wg sync.WaitGroup
+	wg := sync.WaitGroup{}
+	wg.Add(b.N)
 
 	for i := 0; i < b.N; i++ {
-		wg.Add(1)
 		go func(i int) {
 			_, err := driver.Get(fmt.Sprintf("%d", i))
 			if err != nil {

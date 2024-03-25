@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 func main() {
-	driver := cache.New(time.Minute)
+	driver := cache.New(context.Background(), time.Minute, time.Minute*2)
 
 	driver.Set("statue of liberty", "40.68960612218659, -74.0456618251789", time.Minute*2)
 
@@ -28,4 +29,6 @@ func main() {
 			log.Println("element not found")
 		}
 	}
+
+	driver.Shutdown()
 }

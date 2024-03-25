@@ -10,6 +10,15 @@ go get -u github.com/KudinovKV/FastEmbededCache
 ## Example Usage: 
 
 ```go
+import (
+    "context"
+    "errors"
+    "log"
+    "time"
+
+    "github.com/KudinovKV/FastEmbededCache/cache"
+)
+
 
 defaultTTL := time.Minute
 cleanerTimeout := time.Minute*2
@@ -44,12 +53,22 @@ driver.Shutdown()
 - Embedded solution (everything stored in RAM).
 - Bare golang (didn't use external services, DBMS, or network data transfers within the algorithm).
 
+## Algorithms
+
+### Lazy Solution
+
+Lazy solution uses bare Golang map and mutex to store data. This solution creates request to **DELETE** expired key only then this key is **GET** by client. Complexity for INSERT, GET, DELETE operation are `O(1)`. One of the problem here, that if there are a lot of key with small TTL, map would be full of expired entries and them will prevent other operations from executing more quickly.
+
+### PriorityQueue Solution
+
+This solution uses a binary tree from a `container/heap` to store "sorted" records. The main property of the binary heap is that it provides quick access to the element with the smallest TTL value without having to completely iterate over all the elements. In this algorithm, a separate goroutine is created, which goes through the heap and deletes expired keys. INSERT and DELETE operations become more complex. In the worst case, the complexity degrades to `O(log n)`. Additional memory is also required for heap storage. However, the problem of storing expired keys is solved, which can be critical on large data sets.
+
 ## Benchmark
 
 Benchmark could be run using command below. Environment `TEST_MODE` set the algorithm to use: `LAZY` or `DEFAULT`.
 
 ```bash
-make benchmark 
+make benchmark
 ```
 
 ### PriorityQueue Solution
